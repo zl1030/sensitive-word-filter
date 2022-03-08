@@ -32,7 +32,7 @@ docker run --name sensitive-word-filter -d -p 8080:8080 -v /data:/word -e WORD_P
 ```
 
 ## 访问接口
-浏览器或者Get方式请求http://[服务器IP]:8080/word_filter/[字符串]
-返回json格式结果,参数result=0代表未发现敏感词,result=1代表发现敏感词,word为过滤后内容.
+浏览器或者Get方式请求http://[服务器IP]:8080/word_filter/[字符串]  
+返回json格式结果,参数result=0代表未发现敏感词,result=1代表发现敏感词,word为过滤后内容.  
 例如：
 {"result":0,"word":"哈哈哈"}
