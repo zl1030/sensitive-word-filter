@@ -1,5 +1,6 @@
 package com.nirvana.service;
 
+import com.google.common.util.concurrent.RateLimiter;
 import com.nirvana.service.SensitiveWordUtil.SensitiveWord;
 import io.quarkus.logging.Log;
 import io.quarkus.runtime.Quarkus;
@@ -22,6 +23,7 @@ public class Main {
 
         @Override
         public int run(String... args) throws Exception {
+
             String path = System.getenv("WORD_PATH");
             Log.info("WORD_PATH:" + path);
             Set<SensitiveWord> words = Files.lines(Paths.get(path), StandardCharsets.UTF_8)
@@ -29,7 +31,11 @@ public class Main {
                 .parallel()
                 .map(word -> new SensitiveWord((byte) 1, word.toLowerCase())).collect(Collectors.toSet());
             SensitiveWordUtil.init(words);
-           Log.info("init words num:" + words.size());
+            Log.info("init words num:" + words.size());
+
+            int permitsPerSecond = 200;
+            SensitiveWordFilterService.rateLimiter = RateLimiter.create(permitsPerSecond);
+
             Quarkus.waitForExit();
             return 0;
         }

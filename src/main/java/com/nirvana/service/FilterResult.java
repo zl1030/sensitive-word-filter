@@ -11,6 +11,7 @@ import lombok.ToString;
 @ToString
 public class FilterResult {
 
+    private int code;
     private int result;
     private String word;
 }
