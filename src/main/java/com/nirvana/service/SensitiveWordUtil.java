@@ -54,6 +54,7 @@ public class SensitiveWordUtil {
      * @param sensitiveWordSet 敏感词库
      */
     public static synchronized void init(Collection<SensitiveWord> sensitiveWordSet) {
+        sensitiveWordMap = null;
         sensitiveWordMap = initSensitiveWordMap(sensitiveWordSet);
 //        if (PATTERN_ACTIVE) {
 //            long now = System.currentTimeMillis();
@@ -243,7 +244,7 @@ public class SensitiveWordUtil {
      * @param txt 文字
      * @return 若包含返回true，否则返回false
      */
-    public static boolean contains(String txt) {
+    public static synchronized boolean contains(String txt) {
         return contains(txt, MaxMatchType);
     }
 
@@ -321,7 +322,7 @@ public class SensitiveWordUtil {
      *
      * @param txt 文本
      */
-    public static String replaceSensitiveWord(String txt) {
+    public static synchronized String replaceSensitiveWord(String txt) {
         String tmp = replaceSensitiveWord(txt, REPLACE_MARK_CHAR, MaxMatchType);
         return tmp;
     }

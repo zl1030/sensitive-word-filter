@@ -1,6 +1,8 @@
 # sensitive-word-filter
 
 提供简单的敏感词过滤web服务
+JavaSDK：graalvm
+Java编译等级：Java11
 
 ## 构建命令
 
@@ -31,13 +33,13 @@ docker build -f src/main/docker/Dockerfile.native-micro -t zl1030/sensitive-word
 在Windows下:
 
 ```bash
-docker run --name sensitive-word-filter -d -p 8080:8080 -v d:/:/word zl1030/sensitive-word-filter
+docker run --name sensitive-word-filter -d --restart=always -p 8080:8080 -v d:/:/word zl1030/sensitive-word-filter
 ```
 
 在Linux下:
 
 ```bash
-docker run --name sensitive-word-filter -d -p 8080:8080 -v /data:/word zl1030/sensitive-word-filter
+docker run --name sensitive-word-filter -d --restart=always -p 8080:8080 -v /data:/word zl1030/sensitive-word-filter
 ```
 
 ## OpenAPI协议
