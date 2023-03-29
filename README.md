@@ -33,13 +33,13 @@ docker build -f src/main/docker/Dockerfile.native-micro -t zl1030/sensitive-word
 在Windows下:
 
 ```bash
-docker run --name sensitive-word-filter -d --restart=always -p 8080:8080 -v d:/:/word zl1030/sensitive-word-filter
+docker run --name sensitive-word-filter -d --restart=always -p 8080:8080 -v d:/:/word zl1030/sensitive-word-filter:0.6
 ```
 
 在Linux下:
 
 ```bash
-docker run --name sensitive-word-filter -d --restart=always -p 8080:8080 -v /data:/word zl1030/sensitive-word-filter
+docker run --name sensitive-word-filter -d --restart=always -p 8080:8080 -v /data:/word zl1030/sensitive-word-filter:0.6
 ```
 
 ## OpenAPI协议
