@@ -11,7 +11,7 @@
 ## 构建Docker命令
 
 ```bash
-docker build -f src/main/docker/Dockerfile.native-micro -t zl1030/sensitive-word-filter:0.5 .
+docker build -f src/main/docker/Dockerfile.native-micro -t zl1030/sensitive-word-filter:0.6 .
 ```
 
 ## 准备词库文件
