@@ -2,19 +2,33 @@ package com.nirvana.service;
 
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.RateLimiter;
+import java.io.IOException;
 import java.net.URLDecoder;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import javax.json.JsonArray;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
+import org.eclipse.microprofile.openapi.annotations.OpenAPIDefinition;
+import org.eclipse.microprofile.openapi.annotations.info.Contact;
+import org.eclipse.microprofile.openapi.annotations.info.Info;
 import org.jboss.resteasy.annotations.jaxrs.FormParam;
 
 @Path("")
@@ -29,6 +43,25 @@ public class SensitiveWordFilterService {
         FilterResult SERVICE_BUSY = new FilterResult(1002, 1, "");
         FilterResult TIMEOUT_REQ = new FilterResult(1003, 1, "");
         FilterResult EXCEPTION = new FilterResult(2000, 1, "");
+    }
+
+    @POST
+    @Path("/simple_word_filter")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    public FilterResult simple_word_filter(@FormParam String rawContent) {
+        try {
+            if (!rateLimiter.tryAcquire()) {
+                return Code.SERVICE_BUSY;
+            }
+
+            String filteredContent = SensitiveWordUtil.replaceSensitiveWord(rawContent);
+
+            return new FilterResult(0, filteredContent.equals(rawContent) ? 0 : 1, filteredContent);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return Code.EXCEPTION;
     }
 
     @POST
@@ -132,5 +165,38 @@ public class SensitiveWordFilterService {
             sb.append(keys.get(s));
         }
         return sb.toString();
+    }
+
+    @GET
+    @Path("/get_addon_words")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    public Set<String> get_addon_words() {
+        return Main.loadWordsFromEnv(Main.ADDON_WORD_PATH);
+    }
+
+    @POST
+    @Path("/update_addon_words")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Set<String> update_addon_words(JsonArray words) {
+        return Main.updateWordsFromEnv(Main.ADDON_WORD_PATH, jsontostringset(words));
+    }
+
+    public static Set<String> jsontostringset(JsonArray words) {
+        Set<String> set = new HashSet<>();
+        for (int i = 0; i < words.size(); i++) {
+            set.add(words.getString(i));
+        }
+        return set;
+    }
+
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @Getter
+    @ToString
+    public class AddonWords {
+
+        private Set<String> words;
     }
 }

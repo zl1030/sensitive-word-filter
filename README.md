@@ -27,21 +27,18 @@ docker build -f src/main/docker/Dockerfile.native-micro -t zl1030/sensitive-word
 
 ## 运行Docker
 
-环境变量WORD_PATH: 指定词库文本文件路径,必要时需要映射卷,以下是使用word.txt文件的例子:
+把宿主机上目录映射到/word卷，默认会读取/word目录下words.txt和addon.txt，如果需要可以通过设置环境变量WORD_PATH和ADDON_WORD_PATH特殊指定词库文件:
 在Windows下:
 
 ```bash
-docker run --name sensitive-word-filter -d -p 8080:8080 -v d:/:/word -e WORD_PATH=/word/words.txt  zl1030/sensitive-word-filter
+docker run --name sensitive-word-filter -d -p 8080:8080 -v d:/:/word zl1030/sensitive-word-filter
 ```
 
 在Linux下:
 
 ```bash
-docker run --name sensitive-word-filter -d -p 8080:8080 -v /data:/word -e WORD_PATH=/word/words.txt  zl1030/sensitive-word-filter
+docker run --name sensitive-word-filter -d -p 8080:8080 -v /data:/word zl1030/sensitive-word-filter
 ```
 
-## 访问接口
-
-浏览器或者Get方式请求http://[服务器IP]:8080/word_filter/[字符串]  
-返回json格式结果,参数result=0代表未发现敏感词,result=1代表发现敏感词,word为过滤后内容.  
-例如： {"result":0,"word":"哈哈哈"}
+## OpenAPI协议
+浏览器访问http://[服务器IP]:8080/q/swagger-ui/

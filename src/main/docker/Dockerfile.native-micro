@@ -28,5 +28,6 @@ EXPOSE 8080
 USER 1001
 
 ENV WORD_PATH=/word/words.txt
+ENV ADDON_WORD_PATH=/word/addon.txt
 
 CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]
