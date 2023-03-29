@@ -1,6 +1,5 @@
 package com.nirvana.service;
 
-import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.RateLimiter;
 import com.nirvana.service.SensitiveWordUtil.SensitiveWord;
 import io.quarkus.logging.Log;
@@ -22,9 +21,6 @@ import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.io.monitor.FileAlterationListener;
 import org.apache.commons.io.monitor.FileAlterationMonitor;
 import org.apache.commons.io.monitor.FileAlterationObserver;
-import org.eclipse.microprofile.openapi.annotations.OpenAPIDefinition;
-import org.eclipse.microprofile.openapi.annotations.info.Contact;
-import org.eclipse.microprofile.openapi.annotations.info.Info;
 
 
 @QuarkusMain
@@ -43,7 +39,11 @@ public class Main {
         @Override
         public int run(String... args) throws Exception {
 
-            updateSensitiveWords();
+            int permitsPerSecond = 200;
+            SensitiveWordFilterService.rateLimiter = RateLimiter.create(permitsPerSecond);
+
+            loadBaseWords();
+            updateAddonWords();
             monitorPathChangedToUpdateSensitiveWords(System.getenv(ADDON_WORD_PATH));
 
             Quarkus.waitForExit();
@@ -102,7 +102,7 @@ public class Main {
                     return;
                 }
                 Log.info("onFileCreate");
-                updateSensitiveWords();
+                updateAddonWords();
             }
 
             @Override
@@ -111,7 +111,7 @@ public class Main {
                     return;
                 }
                 Log.info("onFileChange");
-                updateSensitiveWords();
+                updateAddonWords();
             }
 
             @Override
@@ -120,7 +120,7 @@ public class Main {
                     return;
                 }
                 Log.info("onFileDelete");
-                updateSensitiveWords();
+                updateAddonWords();
             }
 
             @Override
@@ -131,19 +131,24 @@ public class Main {
         dumpFileMonitor.start();
     }
 
-    private static void updateSensitiveWords() {
+    private static void loadBaseWords() {
         Set<String> baseWords = loadWordsFromEnv(WORD_PATH);
-        Set<String> addonWords = loadWordsFromEnv(ADDON_WORD_PATH);
-        Set<String> allWords = Sets.union(baseWords, addonWords);
 
-        Set<SensitiveWord> words = allWords.stream()
+        Set<SensitiveWord> words = baseWords.stream()
             .parallel()
             .map(word -> new SensitiveWord((byte) 1, word.toLowerCase())).collect(Collectors.toSet());
-        SensitiveWordUtil.init(words);
-        Log.info("init words num:" + words.size());
+        SensitiveWordUtil.initBaseWords(words);
+        Log.info("initBaseWords num:" + words.size());
+    }
 
-        int permitsPerSecond = 200;
-        SensitiveWordFilterService.rateLimiter = RateLimiter.create(permitsPerSecond);
+    private static void updateAddonWords() {
+        Set<String> addonWords = loadWordsFromEnv(ADDON_WORD_PATH);
+
+        Set<SensitiveWord> words = addonWords.stream()
+            .parallel()
+            .map(word -> new SensitiveWord((byte) 1, word.toLowerCase())).collect(Collectors.toSet());
+        SensitiveWordUtil.initAddonWords(words);
+        Log.info("updateAddonWords num:" + words.size());
     }
 
     public static Set<String> loadWordsFromEnv(String envName) {
@@ -156,10 +161,10 @@ public class Main {
         return loadWords(path);
     }
 
-    public static Set<String> updateWordsFromEnv(String envName, Set<String> words)  {
+    public static Set<String> updateWordsFromEnv(String envName, Set<String> words) {
         String envPath = System.getenv(envName);
         Path path = Paths.get(envPath);
-        try{
+        try {
             Files.deleteIfExists(path);
             Files.write(path, words, StandardCharsets.UTF_8);
             Log.info("update words from env:" + envName + ", path:" + envPath);

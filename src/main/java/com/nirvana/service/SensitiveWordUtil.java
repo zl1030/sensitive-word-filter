@@ -31,7 +31,8 @@ public class SensitiveWordUtil {
     /**
      * 敏感词集合
      */
-    public static HashMap sensitiveWordMap;
+    public static HashMap baseSensitiveWordMap;
+    public static HashMap addonSensitiveWordMap;
 
     public static Collection<Pattern> wordPatterns;
 
@@ -44,7 +45,8 @@ public class SensitiveWordUtil {
 
 
     static {
-        sensitiveWordMap = initSensitiveWordMap(Collections.EMPTY_SET);
+        baseSensitiveWordMap = initSensitiveWordMap(Collections.EMPTY_SET);
+        addonSensitiveWordMap = initSensitiveWordMap(Collections.EMPTY_SET);
         wordPatterns = Collections.EMPTY_SET;
     }
 
@@ -53,9 +55,17 @@ public class SensitiveWordUtil {
      *
      * @param sensitiveWordSet 敏感词库
      */
-    public static synchronized void init(Collection<SensitiveWord> sensitiveWordSet) {
-        sensitiveWordMap = null;
-        sensitiveWordMap = initSensitiveWordMap(sensitiveWordSet);
+    public static synchronized void initBaseWords(Collection<SensitiveWord> sensitiveWordSet) {
+        baseSensitiveWordMap = initSensitiveWordMap(sensitiveWordSet);
+//        if (PATTERN_ACTIVE) {
+//            long now = System.currentTimeMillis();
+//            wordPatterns = compiledPatterns(sensitiveWordSet);
+//            Log.info("pattern compile wordCount:{} time:{}", sensitiveWordSet.size(), System.currentTimeMillis() - now);
+//        }
+    }
+
+    public static synchronized void initAddonWords(Collection<SensitiveWord> sensitiveWordSet) {
+        addonSensitiveWordMap = initSensitiveWordMap(sensitiveWordSet);
 //        if (PATTERN_ACTIVE) {
 //            long now = System.currentTimeMillis();
 //            wordPatterns = compiledPatterns(sensitiveWordSet);
@@ -226,10 +236,10 @@ public class SensitiveWordUtil {
      * @param matchType 匹配规则 1：最小匹配规则，2：最大匹配规则
      * @return 若包含返回true，否则返回false
      */
-    private static boolean contains(String txt, int matchType) {
+    private static boolean contains(HashMap wordsMap, String txt, int matchType) {
         for (Set<Long> chars : CHARS_CHECK_SEQ) {
             for (int i = 0; i < txt.length(); i++) {
-                if (checkSensitiveWord(txt, i, matchType, chars) > 0) {
+                if (checkSensitiveWord(wordsMap, txt, i, matchType, chars) > 0) {
                     return true;
                 }
             }
@@ -245,7 +255,10 @@ public class SensitiveWordUtil {
      * @return 若包含返回true，否则返回false
      */
     public static synchronized boolean contains(String txt) {
-        return contains(txt, MaxMatchType);
+        if (!contains(baseSensitiveWordMap, txt, MaxMatchType)) {
+            return contains(addonSensitiveWordMap, txt, MaxMatchType);
+        }
+        return true;
     }
 
     /**
@@ -254,12 +267,12 @@ public class SensitiveWordUtil {
      * @param txt       文字
      * @param matchType 匹配规则 1：最小匹配规则，2：最大匹配规则
      */
-    private static Set<String> getSensitiveWord(String txt, int matchType, Set<Long> ignoreChars) {
+    private static Set<String> getSensitiveWord(HashMap wordsMap, String txt, int matchType, Set<Long> ignoreChars) {
         Set<String> sensitiveWordList = new HashSet<>();
 
         for (int i = 0; i < txt.length(); i++) {
             //判断是否包含敏感字符
-            int length = checkSensitiveWord(txt, i, matchType, ignoreChars);
+            int length = checkSensitiveWord(wordsMap, txt, i, matchType, ignoreChars);
             if (length > 0) {//存在,加入list中
                 sensitiveWordList.add(txt.substring(i, i + length));
                 i = i + length - 1;//减1的原因，是因为for会自增
@@ -302,7 +315,8 @@ public class SensitiveWordUtil {
         } else { //获取所有的敏感词
             Set<String> set = Sets.newLinkedHashSet();
             for (Set<Long> chars : CHARS_CHECK_SEQ) {
-                set.addAll(getSensitiveWord(txt, matchType, chars));
+                set.addAll(getSensitiveWord(baseSensitiveWordMap, txt, matchType, chars));
+                set.addAll(getSensitiveWord(addonSensitiveWordMap, txt, matchType, chars));
             }
             Iterator<String> iterator = set.iterator();
             String word;
@@ -462,7 +476,8 @@ public class SensitiveWordUtil {
      *
      * @return 如果存在，则返回敏感词字符的长度，不存在返回0
      */
-    private static int checkSensitiveWord(String txt, int beginIndex, int matchType, Set<Long> ignoreChars) {
+    private static int checkSensitiveWord(HashMap hashMap, String txt, int beginIndex, int matchType,
+        Set<Long> ignoreChars) {
         //敏感词结束标识位：用于敏感词只有1位的情况
         boolean flag = false;
         //匹配标识数默认为0
@@ -472,7 +487,7 @@ public class SensitiveWordUtil {
 
         String tmp = txt.toLowerCase();
 
-        Map nowMap = sensitiveWordMap;
+        Map nowMap = hashMap;
         for (int i = beginIndex; i < tmp.length(); i++) {
             word = tmp.charAt(i);
 
